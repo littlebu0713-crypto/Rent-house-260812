@@ -320,3 +320,325 @@ export default function PropertiesPage() {
         3.  重新呼叫 `fetchProperties()` 刷新頁面清單。
 
 確認完房屋列表頁後，下一個 MVP 模組是 **租金手動紀錄頁 (`/rent-history`)**！
+import React, { useState, useEffect } from 'react';
+
+export default function RentHistoryPage() {
+  const [rentRecords, setRentRecords] = useState([]); // 租金紀錄 State
+  const [properties, setProperties] = useState([]);   // 房屋選單 State (Modal與篩選器用)
+  const [selectedPropertyFilter, setSelectedPropertyFilter] = useState('all'); // 房屋篩選
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false); // 控制 Modal 開關
+
+  // --- 1. 取得資料 (房屋選單與租金紀錄) ---
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Mock Data 測試資料
+      setTimeout(() => {
+        setProperties([
+          { id: 1, title: '陽明山景觀套房 A' },
+          { id: 2, title: '信義區商務套房 B' },
+        ]);
+
+        setRentRecords([
+          {
+            id: 101,
+            billing_month: '2026-08',
+            property_id: 1,
+            property_title: '陽明山景觀套房 A',
+            tenant_name: '王小明',
+            amount: 15000,
+            payment_date: '2026-08-05',
+            payment_method: '轉帳',
+            status: 'paid',
+            note: '已確認入帳',
+          },
+          {
+            id: 102,
+            billing_month: '2026-08',
+            property_id: 2,
+            property_title: '信義區商務套房 B',
+            tenant_name: '李大華',
+            amount: 22000,
+            payment_date: '-',
+            payment_method: '-',
+            status: 'pending',
+            note: '預計 15 號繳納',
+          },
+        ]);
+        setIsLoading(false);
+      }, 800);
+    } catch (error) {
+      console.error('取得紀錄失敗:', error);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // --- 2. 新增記帳表單狀態 ---
+  const [newRecord, setNewRecord] = useState({
+    property_id: '',
+    tenant_name: '',
+    billing_month: '2026-08',
+    amount: '',
+    payment_date: '',
+    payment_method: '轉帳',
+    status: 'paid',
+    note: '',
+  });
+
+  const handleInputChange = (e) => {
+    setNewRecord({ ...newRecord, [e.target.name]: e.target.value });
+  };
+
+  const handleAddRecord = async (e) => {
+    e.preventDefault();
+    try {
+      // API 發送範例：
+      // await apiFetch('/api/rent-records', {
+      //   method: 'POST',
+      //   body: JSON.stringify(newRecord),
+      // });
+
+      console.log('提交新租金紀錄:', newRecord);
+
+      setIsModalOpen(false);
+      setNewRecord({
+        property_id: '',
+        tenant_name: '',
+        billing_month: '2026-08',
+        amount: '',
+        payment_date: '',
+        payment_method: '轉帳',
+        status: 'paid',
+        note: '',
+      });
+      fetchData(); // 重新整理列表
+    } catch (error) {
+      console.error('新增紀錄失敗:', error);
+    }
+  };
+
+  // 根據選擇的房屋過濾紀錄
+  const filteredRecords = selectedPropertyFilter === 'all'
+    ? rentRecords
+    : rentRecords.filter(r => r.property_id === Number(selectedPropertyFilter));
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      
+      {/* --- 頂部欄 --- */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">租金收取紀錄</h1>
+
+        <div className="flex items-center gap-3">
+          {/* 下拉篩選器 */}
+          <select
+            value={selectedPropertyFilter}
+            onChange={(e) => setSelectedPropertyFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          >
+            <option value="all">所有房屋</option>
+            {properties.map((p) => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+
+          {/* + 手動記帳按鈕 */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            <span className="text-lg">+</span> 手動記帳
+          </button>
+        </div>
+      </div>
+
+      {/* --- 主體區: 表格 (Table) --- */}
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+        <table className="w-full text-left text-sm text-gray-600">
+          <thead className="bg-gray-50 text-xs uppercase text-gray-700">
+            <tr>
+              <th className="px-6 py-3">期數</th>
+              <th className="px-6 py-3">房屋名稱</th>
+              <th className="px-6 py-3">租客</th>
+              <th className="px-6 py-3">金額</th>
+              <th className="px-6 py-3">繳費日期</th>
+              <th className="px-6 py-3">付款方式</th>
+              <th className="px-6 py-3">狀態</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan="7" className="px-6 py-8 text-center text-gray-400">載入中...</td>
+              </tr>
+            ) : filteredRecords.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="px-6 py-8 text-center text-gray-400">尚無繳費紀錄</td>
+              </tr>
+            ) : (
+              filteredRecords.map((record) => (
+                <tr key={record.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium text-gray-900">{record.billing_month}</td>
+                  <td className="px-6 py-4">{record.property_title}</td>
+                  <td className="px-6 py-4">{record.tenant_name}</td>
+                  <td className="px-6 py-4 font-semibold text-gray-900">${record.amount.toLocaleString()}</td>
+                  <td className="px-6 py-4">{record.payment_date}</td>
+                  <td className="px-6 py-4">{record.payment_method}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      record.status === 'paid'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {record.status === 'paid' ? '已繳' : '待繳'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* --- 記帳 Modal --- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-lg">
+            <h2 className="mb-4 text-xl font-bold text-gray-900">新增租金收取紀錄</h2>
+            
+            <form onSubmit={handleAddRecord} className="space-y-4">
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">選擇房屋</label>
+                <select
+                  name="property_id"
+                  required
+                  value={newRecord.property_id}
+                  onChange={handleInputChange}
+                  className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">請選擇房屋...</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">租客姓名</label>
+                  <input
+                    type="text"
+                    name="tenant_name"
+                    required
+                    value={newRecord.tenant_name}
+                    onChange={handleInputChange}
+                    placeholder="例如：王小明"
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">帳單月份</label>
+                  <input
+                    type="month"
+                    name="billing_month"
+                    required
+                    value={newRecord.billing_month}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">實收金額 ($)</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    required
+                    value={newRecord.amount}
+                    onChange={handleInputChange}
+                    placeholder="15000"
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">付款日期</label>
+                  <input
+                    type="date"
+                    name="payment_date"
+                    value={newRecord.payment_date}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">付款方式</label>
+                  <select
+                    name="payment_method"
+                    value={newRecord.payment_method}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="轉帳">轉帳</option>
+                    <option value="現金">現金</option>
+                    <option value="支票">支票</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">狀態</label>
+                  <select
+                    name="status"
+                    value={newRecord.status}
+                    onChange={handleInputChange}
+                    className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="paid">已繳</option>
+                    <option value="pending">待繳</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">備註</label>
+                <input
+                  type="text"
+                  name="note"
+                  value={newRecord.note}
+                  onChange={handleInputChange}
+                  placeholder="例如：提早兩天繳納"
+                  className="w-full rounded-lg border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  儲存紀錄
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
