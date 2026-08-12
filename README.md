@@ -201,3 +201,122 @@ export default function LoginPage() {
     </div>
   );
 }
+import React, { useState, useEffect } from 'react';
+
+// 假設的 API 工具函數，會自動在 Header 帶上 Authorization Token
+// import { apiFetch } from '@/utils/api'; 
+
+export default function PropertiesPage() {
+  const [properties, setProperties] = useState([]); // 房屋清單 State
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false); // 控制 Modal 開關
+
+  // --- 1. 取得房屋清單 ---
+  const fetchProperties = async () => {
+    setIsLoading(true);
+    try {
+      // const data = await apiFetch('/api/properties');
+      // setProperties(data);
+
+      // [Mock Data] 測試用假資料
+      setTimeout(() => {
+        setProperties([
+          { id: 1, title: '陽明山景觀套房 A', address: '台北市士林區...', rent_amount: 15000, status: 'vacant' },
+          { id: 2, title: '信義區商務套房 B', address: '台北市信義區...', rent_amount: 22000, status: 'rented' },
+          { id: 3, title: '板橋溫馨小寓 C', address: '新北市板橋區...', rent_amount: 12000, status: 'vacant' },
+        ]);
+        setIsLoading(false);
+      }, 1000);
+
+    } catch (error) {
+      console.error('取得房屋清單失敗:', error);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  // --- 2. 新增房屋表單狀態 ---
+  const [newProperty, setNewProperty] = useState({
+    title: '',
+    address: '',
+    rent_amount: '',
+    rent_due_day: '',
+  });
+
+  const handleInputChange = (e) => {
+    setNewProperty({ ...newProperty, [e.target.name]: e.target.value });
+  };
+
+  const handleAddProperty = async (e) => {
+    e.preventDefault();
+    try {
+      // await apiFetch('/api/properties', {
+      //   method: 'POST',
+      //   body: JSON.stringify(newProperty),
+      // });
+
+      console.log('提交新房屋資料:', newProperty);
+
+      // 成功後的操作：
+      setIsModalOpen(false); // 關閉 Modal
+      setNewProperty({ title: '', address: '', rent_amount: '', rent_due_day: '' }); // 清空表單
+      fetchProperties(); // 重新刷新清單
+    } catch (error) {
+      console.error('新增房屋失敗:', error);
+    }
+  };
+
+  // --- 3. 狀態標籤 Component ---
+  const StatusBadge = ({ status }) => {
+    const isVacant = status === 'vacant';
+    return (
+      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+        isVacant ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+      }`}>
+        {isVacant ? '空房 (Vacant)' : '已出租 (Rented)'}
+      </span>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      
+      {/* --- 頂部欄 --- */}
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">我的房產清單</h1>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          <span className="text-lg">+</span> 新增房屋
+        </button>
+      </div>
+
+      {/* --- 主體區: Grid 網格卡片 --- */}
+      {isLoading ? (
+        <div className="text-center text-gray-500">載入中...這段程式碼實現了你描述的 **房屋列表與新增頁 (`/properties`)** 的所有核心功能。
+
+### **實作重點解析**
+
+1.  **UI 佈局與元件化**
+    *   **頂部欄:** 使用 Flexbox (`justify-between`) 讓標題和「+ 新增房屋」按鈕分居兩側。
+    *   **主體區 Grid:** 使用 Tailwind 的 `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6` 實現響應式佈局，在不同螢幕尺寸下自動調整每行顯示的卡片數量。
+    *   **卡片設計:** 每張卡片清晰顯示房屋圖片（假圖）、狀態標籤、標題、地址和月租金。
+    *   **StatusBadge:** 封裝了一個小的 Component，根據 `status` 動態回傳綠色 (Vacant) 或藍色 (Rented) 的標籤。
+
+2.  **互動與狀態管理**
+    *   **`isModalOpen` State:** 用於控制新增房屋表單 Modal 的顯示與隱藏。
+    *   **`properties` State:** 儲存從 API 取得的房屋清單資料。
+    *   **`newProperty` State:** 儲存 Modal 表單中各個輸入欄位的數值。
+
+3.  **API 串接邏輯**
+    *   **`fetchProperties`:** 頁面載入時 (`useEffect`) 呼叫，發送 `GET /api/properties` 取得資料。這裡包含了一個 Mock Data 的範例代碼供測試。
+    *   **`handleAddProperty`:** 表單提交時呼叫，發送 `POST /api/properties`。成功後會執行三個關鍵步驟：
+        1.  關閉 Modal。
+        2.  清空表單狀態。
+        3.  重新呼叫 `fetchProperties()` 刷新頁面清單。
+
+確認完房屋列表頁後，下一個 MVP 模組是 **租金手動紀錄頁 (`/rent-history`)**！
