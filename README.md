@@ -35,3 +35,7 @@ CREATE TABLE rent_records (
     note TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );# Rent-house-260812
+{
+  "email": "landlord@example.com",
+  "password": "your_secure_password"
+}
