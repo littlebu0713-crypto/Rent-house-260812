@@ -717,3 +717,6 @@ CREATE TABLE rent_records (
 <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
   isVacant ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
 }`}>
+<span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
+  isVacant ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+}`}>
